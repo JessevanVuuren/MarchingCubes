@@ -1,0 +1,1 @@
+good paper: https://paulbourke.net/geometry/polygonise/

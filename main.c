@@ -1,8 +1,9 @@
+#include "maps.h"
 #include <raylib.h>
 #include <raymath.h>
 #include <rcamera.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define HEIGHT 720
@@ -41,24 +42,32 @@ void draw_grid(int width, int height, int depth) {
 }
 
 void generate_cubes(Cube *cubes) {
-    cubes[0].p[0] = (Vector3){1, 1, 1};
-    cubes[0].p[1] = (Vector3){1, 1, -1};
+    cubes[0].p[0] = (Vector3){-1, -1, -1};
+    cubes[0].p[1] = (Vector3){1, -1, -1};
     cubes[0].p[2] = (Vector3){1, -1, 1};
-    cubes[0].p[3] = (Vector3){1, -1, -1};
-    cubes[0].p[4] = (Vector3){-1, 1, 1};
-    cubes[0].p[5] = (Vector3){-1, 1, -1};
-    cubes[0].p[6] = (Vector3){-1, -1, 1};
-    cubes[0].p[7] = (Vector3){-1, -1, -1};
+    cubes[0].p[3] = (Vector3){-1, -1, 1};
+    cubes[0].p[4] = (Vector3){-1, 1, -1};
+    cubes[0].p[5] = (Vector3){1, 1, -1};
+    cubes[0].p[6] = (Vector3){1, 1, 1};
+    cubes[0].p[7] = (Vector3){-1, 1, 1};
 
-
-    cubes[0].val[0] = 0;
+    cubes[0].val[0] = 255;
     cubes[0].val[1] = 0;
     cubes[0].val[2] = 0;
-    cubes[0].val[3] = 255;
+    cubes[0].val[3] = 0;
     cubes[0].val[4] = 0;
     cubes[0].val[5] = 0;
     cubes[0].val[6] = 0;
-    cubes[0].val[7] = 255;
+    cubes[0].val[7] = 0;
+
+    // cubes[0].val[0] = 0;
+    // cubes[0].val[1] = 255;
+    // cubes[0].val[2] = 0;
+    // cubes[0].val[3] = 0;
+    // cubes[0].val[4] = 0;
+    // cubes[0].val[5] = 255;
+    // cubes[0].val[6] = 0;
+    // cubes[0].val[7] = 255;
 }
 
 void print_vec(Vector3 vec) {
@@ -77,19 +86,127 @@ void draw_cube_vertex(Cube cube) {
     DrawSphere((Vector3){cube.p[7].x, cube.p[7].y, cube.p[7].z}, .05, (Color){cube.val[7], cube.val[7], cube.val[7], 255});
 }
 
-Mesh draw_triangle(Cube cube) {
+Mesh draw_triangle_test(Cube cube) {
     Mesh mesh = {0};
+    mesh.vertexCount = 6;   // 6 vertices (3 for each triangle)
+    mesh.triangleCount = 2; // 2 triangles
 
-    mesh.vertexCount = 3;
-    mesh.triangleCount = 1;
-
+    // Allocate memory for vertices (6 vertices, 3 floats per vertex)
     mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
 
-    mesh.vertices[0] = 0.0f; mesh.vertices[1] = 1.0f; mesh.vertices[2] = 0.0f;  // Vertex 1 (top)
-    mesh.vertices[3] = 1.0f; mesh.vertices[4] = -1.0f; mesh.vertices[5] = 0.0f; // Vertex 2 (right)
-    mesh.vertices[6] = -1.0f; mesh.vertices[7] = -1.0f; mesh.vertices[8] = 0.0f; // Vertex 3 (left)
+    // Triangle 1 (disconnected)
+    mesh.vertices[0] = 0.0f;
+    mesh.vertices[1] = 1.0f;
+    mesh.vertices[2] = 0.0f; // Vertex A
+    mesh.vertices[3] = 1.0f;
+    mesh.vertices[4] = -1.0f;
+    mesh.vertices[5] = 0.0f; // Vertex B
+    mesh.vertices[6] = -1.0f;
+    mesh.vertices[7] = -1.0f;
+    mesh.vertices[8] = 0.0f; // Vertex C
+
+    // Triangle 2 (disconnected)
+    mesh.vertices[9] = 2.1f;
+    mesh.vertices[10] = 1.1f;
+    mesh.vertices[11] = 0.1f; // Vertex D
+    mesh.vertices[12] = 3.1f;
+    mesh.vertices[13] = -1.1f;
+    mesh.vertices[14] = 0.1f; // Vertex E
+    mesh.vertices[15] = 1.1f;
+    mesh.vertices[16] = -1.1f;
+    mesh.vertices[17] = 0.1f; // Vertex F
+
+    // Upload the mesh to the GPU for rendering
+    UploadMesh(&mesh, false);
+
+    return mesh;
+}
+
+Vector3 center_of_two_vec3(Vector3 point1, Vector3 point2) {
+    float center_x = (point1.x + point2.x) / 2;
+    float center_y = (point1.y + point2.y) / 2;
+    float center_z = (point1.z + point2.z) / 2;
+
+    return (Vector3){center_x, center_y, center_z};
+}
+
+Mesh draw_mesh(Cube cube) {
+    Vector3 vert_list[12];
+
+    int cube_index = 0;
+    if (cube.val[0] < 100) cube_index |= 1;
+    if (cube.val[1] < 100) cube_index |= 2;
+    if (cube.val[2] < 100) cube_index |= 4;
+    if (cube.val[3] < 100) cube_index |= 8;
+    if (cube.val[4] < 100) cube_index |= 16;
+    if (cube.val[5] < 100) cube_index |= 32;
+    if (cube.val[6] < 100) cube_index |= 64;
+    if (cube.val[7] < 100) cube_index |= 128;
+
+    if (edgeTable[cube_index] & 1) vert_list[0] = center_of_two_vec3(cube.p[0], cube.p[1]);
+    if (edgeTable[cube_index] & 2) vert_list[1] = center_of_two_vec3(cube.p[1], cube.p[2]);
+    if (edgeTable[cube_index] & 4) vert_list[2] = center_of_two_vec3(cube.p[2], cube.p[3]);
+    if (edgeTable[cube_index] & 8) vert_list[3] = center_of_two_vec3(cube.p[3], cube.p[0]);
+    if (edgeTable[cube_index] & 16) vert_list[4] = center_of_two_vec3(cube.p[4], cube.p[5]);
+    if (edgeTable[cube_index] & 32) vert_list[5] = center_of_two_vec3(cube.p[5], cube.p[6]);
+    if (edgeTable[cube_index] & 64) vert_list[6] = center_of_two_vec3(cube.p[6], cube.p[7]);
+    if (edgeTable[cube_index] & 128) vert_list[7] = center_of_two_vec3(cube.p[7], cube.p[4]);
+    if (edgeTable[cube_index] & 256) vert_list[8] = center_of_two_vec3(cube.p[0], cube.p[4]);
+    if (edgeTable[cube_index] & 512) vert_list[9] = center_of_two_vec3(cube.p[1], cube.p[5]);
+    if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(cube.p[2], cube.p[6]);
+    if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(cube.p[3], cube.p[7]);
+
+    int vertex_count = 0;
+    for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
+    printf("triangle: %d\n", vertex_count);
+
+    Mesh mesh = {0};
+    mesh.vertexCount = vertex_count;
+    mesh.triangleCount = vertex_count / 3.0;
+    mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
+
+
+    int current_triangle = 0;
+
+    for (int i = 0; i < vertex_count; i += 3) {
+        // Print each vertex for debugging (optional)
+        print_vec(vert_list[triTable[cube_index][i]]);
+        print_vec(vert_list[triTable[cube_index][i + 1]]);
+        print_vec(vert_list[triTable[cube_index][i + 2]]);
+
+        // Reverse the vertex order by assigning in reverse
+        mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i + 2]].x;
+        mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i + 2]].y;
+        mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i + 2]].z;
+
+        mesh.vertices[current_triangle + 3] = vert_list[triTable[cube_index][i + 1]].x;
+        mesh.vertices[current_triangle + 4] = vert_list[triTable[cube_index][i + 1]].y;
+        mesh.vertices[current_triangle + 5] = vert_list[triTable[cube_index][i + 1]].z;
+
+        mesh.vertices[current_triangle + 6] = vert_list[triTable[cube_index][i]].x;
+        mesh.vertices[current_triangle + 7] = vert_list[triTable[cube_index][i]].y;
+        mesh.vertices[current_triangle + 8] = vert_list[triTable[cube_index][i]].z;
+
+        // Move to the next triangle
+        current_triangle += 9; // 3 vertices * 3 coordinates (x, y, z)
+    }
+
+
+
+    // int current_triangle = 0;
+    // for (int i = 0; i < vertex_count; i++) {
+    //     print_vec(vert_list[triTable[cube_index][i]]);
+    //     mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i]].x;
+    //     mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
+    //     mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
+
+    //     current_triangle += 3;
+    // }
 
     UploadMesh(&mesh, false);
+
+
+
 
     return mesh;
 }
@@ -102,12 +219,11 @@ int main(void) {
     Cube cubes[1];
     generate_cubes(cubes);
 
-    Mesh mesh = draw_triangle(cubes[0]);
-    
-    Material matt = LoadMaterialDefault(); 
-    matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
+    // Mesh mesh = draw_triangle_test(cubes[0]);
+    Mesh mesh = draw_mesh(cubes[0]);
 
-    print_vec(cubes[0].p[0]);
+    Material matt = LoadMaterialDefault();
+    matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
 
     int grid_width = 5;
     int grid_height = 5;
@@ -145,8 +261,6 @@ int main(void) {
             ClearBackground(GetColor(0x181818AA));
                 BeginMode3D(camera);
                 draw_cube_vertex(cubes[0]);
-                // draw_triangle(cubes[0]);
-                // draw_grid(grid_width, grid_height, grid_depth);
 
                 DrawMesh(mesh, matt, MatrixIdentity());
                 EndMode3D();
