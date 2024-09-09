@@ -1,6 +1,4 @@
 CC = gcc
-SHELL=cmd
-
 
 CFLAGS = -I./lib/raylib/
 LDFLAGS = -L./lib/raylib/
@@ -15,10 +13,16 @@ TARGET = main
 
 # Target to compile the program
 $(TARGET): $(SRC)
-	if not exist $(OUTPUT) mkdir $(OUTPUT)
+	-mkdir $(OUTPUT)
 	$(CC) $(CFLAGS) $(SRC) -o $(OUTPUT)/$(TARGET) $(LDFLAGS) $(LIBS)
 
 # Clean up build files
 clean:
-	rmdir $(OUTPUT) /s /q
+	-rm -fr $(OUTPUT)
 
+
+
+# windows
+# SHELL=cmd.exe /Q
+# if not exist $(OUTPUT) mkdir $(OUTPUT)
+# rmdir $(OUTPUT) /s /q

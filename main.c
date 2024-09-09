@@ -16,7 +16,7 @@ int main(void)
 
             ClearBackground(GetColor(0x181818AA));
 
-            DrawText("Marching cubes", 190, 200, 20, GetColor(0xffdd33FF));
+            DrawText("Marching cubes!!!", 190, 200, 20, GetColor(0xffdd33FF));
 
         EndDrawing();
     }
