@@ -51,23 +51,23 @@ void generate_cubes(Cube *cubes) {
     cubes[0].p[6] = (Vector3){1, 1, 1};
     cubes[0].p[7] = (Vector3){-1, 1, 1};
 
-    cubes[0].val[0] = 255;
-    cubes[0].val[1] = 0;
-    cubes[0].val[2] = 0;
-    cubes[0].val[3] = 0;
-    cubes[0].val[4] = 0;
-    cubes[0].val[5] = 0;
-    cubes[0].val[6] = 0;
-    cubes[0].val[7] = 0;
-
-    // cubes[0].val[0] = 0;
+    // cubes[0].val[0] = 255;
     // cubes[0].val[1] = 255;
     // cubes[0].val[2] = 0;
     // cubes[0].val[3] = 0;
     // cubes[0].val[4] = 0;
-    // cubes[0].val[5] = 255;
+    // cubes[0].val[5] = 0;
     // cubes[0].val[6] = 0;
-    // cubes[0].val[7] = 255;
+    // cubes[0].val[7] = 0;
+
+    cubes[0].val[0] = 0;
+    cubes[0].val[1] = 255;
+    cubes[0].val[2] = 0;
+    cubes[0].val[3] = 0;
+    cubes[0].val[4] = 0;
+    cubes[0].val[5] = 255;
+    cubes[0].val[6] = 0;
+    cubes[0].val[7] = 255;
 }
 
 void print_vec(Vector3 vec) {
@@ -157,7 +157,8 @@ Mesh draw_mesh(Cube cube) {
     if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(cube.p[3], cube.p[7]);
 
     int vertex_count = 0;
-    for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
+    for (; triTable[cube_index][vertex_count] != -1; vertex_count++)
+        ;
     printf("triangle: %d\n", vertex_count);
 
     Mesh mesh = {0};
@@ -166,32 +167,32 @@ Mesh draw_mesh(Cube cube) {
     mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
 
 
-    int current_triangle = 0;
+    // int current_triangle = 0;
+    // for (int i = 0; i < vertex_count; i += 3) {
+    //     // Print each vertex for debugging (optional)
+    //     print_vec(vert_list[triTable[cube_index][i]]);
+    //     print_vec(vert_list[triTable[cube_index][i + 1]]);
+    //     print_vec(vert_list[triTable[cube_index][i + 2]]);
 
-    for (int i = 0; i < vertex_count; i += 3) {
-        // Print each vertex for debugging (optional)
-        print_vec(vert_list[triTable[cube_index][i]]);
-        print_vec(vert_list[triTable[cube_index][i + 1]]);
-        print_vec(vert_list[triTable[cube_index][i + 2]]);
+    //     // Reverse the vertex order by assigning in reverse
+    //     mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i + 2]].x;
+    //     mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i + 2]].y;
+    //     mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i + 2]].z;
 
-        // Reverse the vertex order by assigning in reverse
-        mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i + 2]].x;
-        mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i + 2]].y;
-        mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i + 2]].z;
+    //     mesh.vertices[current_triangle + 3] = vert_list[triTable[cube_index][i + 1]].x;
+    //     mesh.vertices[current_triangle + 4] = vert_list[triTable[cube_index][i + 1]].y;
+    //     mesh.vertices[current_triangle + 5] = vert_list[triTable[cube_index][i + 1]].z;
 
-        mesh.vertices[current_triangle + 3] = vert_list[triTable[cube_index][i + 1]].x;
-        mesh.vertices[current_triangle + 4] = vert_list[triTable[cube_index][i + 1]].y;
-        mesh.vertices[current_triangle + 5] = vert_list[triTable[cube_index][i + 1]].z;
+    //     mesh.vertices[current_triangle + 6] = vert_list[triTable[cube_index][i]].x;
+    //     mesh.vertices[current_triangle + 7] = vert_list[triTable[cube_index][i]].y;
+    //     mesh.vertices[current_triangle + 8] = vert_list[triTable[cube_index][i]].z;
 
-        mesh.vertices[current_triangle + 6] = vert_list[triTable[cube_index][i]].x;
-        mesh.vertices[current_triangle + 7] = vert_list[triTable[cube_index][i]].y;
-        mesh.vertices[current_triangle + 8] = vert_list[triTable[cube_index][i]].z;
-
-        // Move to the next triangle
-        current_triangle += 9; // 3 vertices * 3 coordinates (x, y, z)
-    }
+    //     // Move to the next triangle
+    //     current_triangle += 9; // 3 vertices * 3 coordinates (x, y, z)
+    // }
 
 
+    DrawTriangle3D(vert_list[0], vert_list[1], vert_list[2], GREEN);
 
     // int current_triangle = 0;
     // for (int i = 0; i < vertex_count; i++) {
@@ -200,16 +201,59 @@ Mesh draw_mesh(Cube cube) {
     //     mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
     //     mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
 
+
+
     //     current_triangle += 3;
     // }
 
+
     UploadMesh(&mesh, false);
-
-
-
 
     return mesh;
 }
+
+void draw_triangles(Cube cube) {
+    Vector3 vert_list[12];
+
+    int cube_index = 0;
+    if (cube.val[0] < 100) cube_index |= 1;
+    if (cube.val[1] < 100) cube_index |= 2;
+    if (cube.val[2] < 100) cube_index |= 4;
+    if (cube.val[3] < 100) cube_index |= 8;
+    if (cube.val[4] < 100) cube_index |= 16;
+    if (cube.val[5] < 100) cube_index |= 32;
+    if (cube.val[6] < 100) cube_index |= 64;
+    if (cube.val[7] < 100) cube_index |= 128;
+
+    if (edgeTable[cube_index] & 1) vert_list[0] = center_of_two_vec3(cube.p[0], cube.p[1]);
+    if (edgeTable[cube_index] & 2) vert_list[1] = center_of_two_vec3(cube.p[1], cube.p[2]);
+    if (edgeTable[cube_index] & 4) vert_list[2] = center_of_two_vec3(cube.p[2], cube.p[3]);
+    if (edgeTable[cube_index] & 8) vert_list[3] = center_of_two_vec3(cube.p[3], cube.p[0]);
+    if (edgeTable[cube_index] & 16) vert_list[4] = center_of_two_vec3(cube.p[4], cube.p[5]);
+    if (edgeTable[cube_index] & 32) vert_list[5] = center_of_two_vec3(cube.p[5], cube.p[6]);
+    if (edgeTable[cube_index] & 64) vert_list[6] = center_of_two_vec3(cube.p[6], cube.p[7]);
+    if (edgeTable[cube_index] & 128) vert_list[7] = center_of_two_vec3(cube.p[7], cube.p[4]);
+    if (edgeTable[cube_index] & 256) vert_list[8] = center_of_two_vec3(cube.p[0], cube.p[4]);
+    if (edgeTable[cube_index] & 512) vert_list[9] = center_of_two_vec3(cube.p[1], cube.p[5]);
+    if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(cube.p[2], cube.p[6]);
+    if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(cube.p[3], cube.p[7]);
+
+    int vertex_count = 0;
+    for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
+
+    int current_triangle = 0;
+    for (int i = 0; i < vertex_count; i+=3) {
+
+        DrawTriangle3D(vert_list[triTable[cube_index][i]], vert_list[triTable[cube_index][i + 2]], vert_list[triTable[cube_index][i + 1]], GREEN);
+
+        // mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i]].x;
+        // mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
+        // mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
+
+        current_triangle += 3;
+    }
+}
+
 
 int main(void) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -221,6 +265,8 @@ int main(void) {
 
     // Mesh mesh = draw_triangle_test(cubes[0]);
     Mesh mesh = draw_mesh(cubes[0]);
+
+
 
     Material matt = LoadMaterialDefault();
     matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
@@ -262,7 +308,9 @@ int main(void) {
                 BeginMode3D(camera);
                 draw_cube_vertex(cubes[0]);
 
-                DrawMesh(mesh, matt, MatrixIdentity());
+                // DrawMesh(mesh, matt, MatrixIdentity());
+                draw_triangles(cubes[0]);
+
                 EndMode3D();
         EndDrawing();
         // clang-format on
