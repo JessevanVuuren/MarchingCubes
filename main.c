@@ -2,6 +2,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rcamera.h>
+#include <string.h>  
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,55 +28,21 @@ typedef struct {
 
 void draw_grid(int width, int height, int depth) {
 
-    for (size_t z = 0; z < depth; z++) {
-        for (size_t y = 0; y < height; y++) {
-            for (size_t x = 0; x < width; x++) {
+    for (size_t z = 0; z < depth + 1; z++) {
+        for (size_t y = 0; y < height + 1; y++) {
+            for (size_t x = 0; x < width + 1; x++) {
 
                 int offset_z = z - (depth - 1) / 2.0;
                 int offset_y = y - (height - 1) / 2.0;
                 int offset_x = x - (width - 1) / 2.0;
 
-                DrawSphere((Vector3){offset_x, offset_y, offset_z}, .05, GRAY);
+                DrawSphere((Vector3){offset_x - .5, offset_y - 0.5, offset_z - 0.5}, .05, GRAY);
             }
         }
     }
 }
 
-void generate_cubes(Cube *cubes) {
-    cubes[0].p[0] = (Vector3){-1, -1, -1};
-    cubes[0].p[1] = (Vector3){1, -1, -1};
-    cubes[0].p[2] = (Vector3){1, -1, 1};
-    cubes[0].p[3] = (Vector3){-1, -1, 1};
-    cubes[0].p[4] = (Vector3){-1, 1, -1};
-    cubes[0].p[5] = (Vector3){1, 1, -1};
-    cubes[0].p[6] = (Vector3){1, 1, 1};
-    cubes[0].p[7] = (Vector3){-1, 1, 1};
-
-    cubes[0].val[0] = 255;
-    cubes[0].val[1] = 0;
-    cubes[0].val[2] = 255;
-    cubes[0].val[3] = 0;
-    cubes[0].val[4] = 255;
-    cubes[0].val[5] = 0;
-    cubes[0].val[6] = 255;
-    cubes[0].val[7] = 0;
-
-    // cubes[0].val[0] = 0;
-    // cubes[0].val[1] = 255;
-    // cubes[0].val[2] = 0;
-    // cubes[0].val[3] = 0;
-    // cubes[0].val[4] = 0;
-    // cubes[0].val[5] = 255;
-    // cubes[0].val[6] = 0;
-    // cubes[0].val[7] = 255;
-}
-
-void print_vec(Vector3 vec) {
-    printf("Cube 0, vertex 0: (%f, %f, %f)\n", vec.x, vec.y, vec.z);
-}
-
 void draw_cube_vertex(Cube cube) {
-
     DrawSphere((Vector3){cube.p[0].x, cube.p[0].y, cube.p[0].z}, .05, (Color){cube.val[0], cube.val[0], cube.val[0], 255});
     DrawSphere((Vector3){cube.p[1].x, cube.p[1].y, cube.p[1].z}, .05, (Color){cube.val[1], cube.val[1], cube.val[1], 255});
     DrawSphere((Vector3){cube.p[2].x, cube.p[2].y, cube.p[2].z}, .05, (Color){cube.val[2], cube.val[2], cube.val[2], 255});
@@ -86,40 +53,37 @@ void draw_cube_vertex(Cube cube) {
     DrawSphere((Vector3){cube.p[7].x, cube.p[7].y, cube.p[7].z}, .05, (Color){cube.val[7], cube.val[7], cube.val[7], 255});
 }
 
-Mesh draw_triangle_test(Cube cube) {
-    Mesh mesh = {0};
-    mesh.vertexCount = 6;   // 6 vertices (3 for each triangle)
-    mesh.triangleCount = 2; // 2 triangles
+void generate_cubes(Cube *cubes, int width, int height, int depth) {
+    int index = 0;
+    for (size_t z = 0; z < depth; z++) {
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
 
-    // Allocate memory for vertices (6 vertices, 3 floats per vertex)
-    mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
+                Cube *c = &cubes[index];                
+                
+                int offset_z = z - (depth - 1) / 2.0;
+                int offset_y = y - (height - 1) / 2.0;
+                int offset_x = x - (width - 1) / 2.0;
 
-    // Triangle 1 (disconnected)
-    mesh.vertices[0] = 0.0f;
-    mesh.vertices[1] = 1.0f;
-    mesh.vertices[2] = 0.0f; // Vertex A
-    mesh.vertices[3] = 1.0f;
-    mesh.vertices[4] = -1.0f;
-    mesh.vertices[5] = 0.0f; // Vertex B
-    mesh.vertices[6] = -1.0f;
-    mesh.vertices[7] = -1.0f;
-    mesh.vertices[8] = 0.0f; // Vertex C
+                c->p[0] = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
+                c->p[1] = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
+                c->p[2] = (Vector3){offset_x + .5, offset_y + -.5, .5 + offset_z};
+                c->p[3] = (Vector3){offset_x + -.5, offset_y + -.5, .5 + offset_z};
+                c->p[4] = (Vector3){offset_x + -.5, offset_y + .5, -.5 + offset_z};
+                c->p[5] = (Vector3){offset_x + .5, offset_y + .5, -.5 + offset_z};
+                c->p[6] = (Vector3){offset_x + .5, offset_y + .5, .5 + offset_z};
+                c->p[7] = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
 
-    // Triangle 2 (disconnected)
-    mesh.vertices[9] = 2.1f;
-    mesh.vertices[10] = 1.1f;
-    mesh.vertices[11] = 0.1f; // Vertex D
-    mesh.vertices[12] = 3.1f;
-    mesh.vertices[13] = -1.1f;
-    mesh.vertices[14] = 0.1f; // Vertex E
-    mesh.vertices[15] = 1.1f;
-    mesh.vertices[16] = -1.1f;
-    mesh.vertices[17] = 0.1f; // Vertex F
+                memset(c->val, 0, sizeof(c->val));
+                
+                index++;
+            }
+        }
+    }
+}
 
-    // Upload the mesh to the GPU for rendering
-    UploadMesh(&mesh, false);
-
-    return mesh;
+void print_vec(Vector3 vec) {
+    printf("Cube 0, vertex 0: (%f, %f, %f)\n", vec.x, vec.y, vec.z);
 }
 
 Vector3 center_of_two_vec3(Vector3 point1, Vector3 point2) {
@@ -156,13 +120,12 @@ Mesh draw_mesh(Cube cube) {
     if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(cube.p[2], cube.p[6]);
     if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(cube.p[3], cube.p[7]);
 
-
     int vertex_count = 0;
     printf("on: %d, on: %d\n", cube_index, vertex_count);
     for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
 
     Mesh mesh = {0};
-    mesh.vertexCount = vertex_count;
+    mesh.vertexCount = vertex_count * 2;
     mesh.triangleCount = mesh.vertexCount / 3.0;
     mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
 
@@ -170,13 +133,13 @@ Mesh draw_mesh(Cube cube) {
     printf("vertexCount: %d\n", mesh.vertexCount);
     printf("triangleCount: %d\n", mesh.triangleCount);
 
-
     int current_triangle = 0;
     for (int i = 0; i < vertex_count; i += 3) {
         // Print each vertex for debugging (optional)
         print_vec(vert_list[triTable[cube_index][i]]);
         print_vec(vert_list[triTable[cube_index][i + 1]]);
         print_vec(vert_list[triTable[cube_index][i + 2]]);
+
 
         // Reverse the vertex order by assigning in reverse
         mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i + 2]].x;
@@ -195,35 +158,15 @@ Mesh draw_mesh(Cube cube) {
         current_triangle += 9; // 3 vertices * 3 coordinates (x, y, z)
     }
 
-
-
-
-    // int current_triangle = 0;
-    // for (int i = 0; i < vertex_count; i++) {
-
-    //     print_vec(vert_list[triTable[cube_index][i]]);
-
-    //     mesh.vertices[current_triangle + 0] = vert_list[triTable[cube_index][i]].x;
-    //     mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
-    //     mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
-
-    //     current_triangle += 3;
-    // }
-
-    // for (int i = 0; i < vertex_count; i++) {
-
-    //     print_vec(vert_list[triTable[cube_index][i]]);
-
-    //     mesh.vertices[current_triangle + 0] = vert_list[triTable[cube_index][i]].x;
-    //     mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].z;
-    //     mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].y;
-
-    //     current_triangle += 3;
-    // }
-
+    for (int i = 0; i < vertex_count; i++) {
+        print_vec(vert_list[triTable[cube_index][i]]);
+        mesh.vertices[current_triangle + 0] = vert_list[triTable[cube_index][i]].x;
+        mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
+        mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
+        current_triangle += 3;
+    }
 
     UploadMesh(&mesh, false);
-
     return mesh;
 }
 
@@ -233,20 +176,23 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
     SetTargetFPS(60);
 
-    Cube cubes[1];
-    generate_cubes(cubes);
+    int grid_width = 5;
+    int grid_height = 5;
+    int grid_depth = 5;
 
-    // Mesh mesh = draw_triangle_test(cubes[0]);
+    int total_size = grid_width * grid_height * grid_depth;
+
+    Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
+    generate_cubes(cubes, grid_width, grid_height, grid_depth);
+
     Mesh mesh = draw_mesh(cubes[0]);
-
+    Model model = LoadModelFromMesh(mesh);
 
 
     Material matt = LoadMaterialDefault();
     matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
 
-    int grid_width = 5;
-    int grid_height = 5;
-    int grid_depth = 5;
+
 
     Camera3D camera = {
         .position = camera_start_pos,
@@ -255,7 +201,6 @@ int main(void) {
         .fovy = 30,
         .projection = CAMERA_PERSPECTIVE};
 
-    Model model = LoadModelFromMesh(mesh);
 
 
 
@@ -282,7 +227,12 @@ int main(void) {
         BeginDrawing();
             ClearBackground(GetColor(0x181818AA));
                 BeginMode3D(camera);
-                draw_cube_vertex(cubes[0]);
+
+                for (size_t i = 0; i < 125; i++)
+                {
+                    draw_cube_vertex(cubes[i]);
+                }
+                // draw_grid(grid_width, grid_height, grid_depth);
 
                 DrawMesh(mesh, matt, MatrixIdentity());
                 DrawModelWires(model, Vector3Zero(), 1, WHITE);
