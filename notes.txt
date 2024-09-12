@@ -1,1 +1,2 @@
 good paper: https://paulbourke.net/geometry/polygonise/
+perlin noise https://rtouti.github.io/graphics/perlin-noise-algorithm

@@ -2,9 +2,9 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rcamera.h>
-#include <string.h>  
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #define HEIGHT 720
@@ -53,17 +53,22 @@ void draw_cube_vertex(Cube cube) {
     DrawSphere((Vector3){cube.p[7].x, cube.p[7].y, cube.p[7].z}, .05, (Color){cube.val[7], cube.val[7], cube.val[7], 255});
 }
 
+void draw_cubes_vertex(Cube *cubes, int width, int height, int depth) {
+    for (size_t i = 0; i < width * height * depth; i++) {
+        draw_cube_vertex(cubes[i]);
+    }
+}
+
 void generate_cubes(Cube *cubes, int width, int height, int depth) {
     int index = 0;
     for (size_t z = 0; z < depth; z++) {
         for (size_t y = 0; y < height; y++) {
             for (size_t x = 0; x < width; x++) {
-
-                Cube *c = &cubes[index];                
-                
                 int offset_z = z - (depth - 1) / 2.0;
                 int offset_y = y - (height - 1) / 2.0;
                 int offset_x = x - (width - 1) / 2.0;
+
+                Cube *c = &cubes[index];
 
                 c->p[0] = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
                 c->p[1] = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
@@ -75,7 +80,7 @@ void generate_cubes(Cube *cubes, int width, int height, int depth) {
                 c->p[7] = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
 
                 memset(c->val, 0, sizeof(c->val));
-                
+
                 index++;
             }
         }
@@ -174,7 +179,7 @@ Mesh draw_mesh(Cube cube) {
 int main(void) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
-    SetTargetFPS(60);
+    SetTargetFPS(120);
 
     int grid_width = 5;
     int grid_height = 5;
@@ -185,14 +190,13 @@ int main(void) {
     Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
     generate_cubes(cubes, grid_width, grid_height, grid_depth);
 
+    cubes[0].val[0] = 255; // test mesh
+
     Mesh mesh = draw_mesh(cubes[0]);
     Model model = LoadModelFromMesh(mesh);
 
-
     Material matt = LoadMaterialDefault();
     matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
-
-
 
     Camera3D camera = {
         .position = camera_start_pos,
@@ -200,9 +204,6 @@ int main(void) {
         .up = camera_start_up,
         .fovy = 30,
         .projection = CAMERA_PERSPECTIVE};
-
-
-
 
     while (!WindowShouldClose()) {
 
@@ -226,18 +227,17 @@ int main(void) {
         // clang-format off
         BeginDrawing();
             ClearBackground(GetColor(0x181818AA));
-                BeginMode3D(camera);
-
-                for (size_t i = 0; i < 125; i++)
-                {
-                    draw_cube_vertex(cubes[i]);
-                }
+            BeginMode3D(camera);
+    
+                draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
                 // draw_grid(grid_width, grid_height, grid_depth);
-
+                
                 DrawMesh(mesh, matt, MatrixIdentity());
                 DrawModelWires(model, Vector3Zero(), 1, WHITE);
 
                 EndMode3D();
+            DrawFPS(10, 10);
+
         EndDrawing();
         // clang-format on
     }
