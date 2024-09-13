@@ -1,11 +1,14 @@
 #include "maps.h"
+#include "perlinNoise.h"
+
 #include <raylib.h>
 #include <raymath.h>
 #include <rcamera.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <time.h>
 
 #define HEIGHT 720
 #define WIDTH 1280
@@ -15,6 +18,10 @@
 
 #define SCALE 1
 #define ORIGIN_OFFSET ((float)SCALE / 2)
+
+double size = 1;
+
+int *permutation_table;
 
 Vector3 target = {0};
 Vector3 origin = {-ORIGIN_OFFSET, -ORIGIN_OFFSET, -ORIGIN_OFFSET};
@@ -27,6 +34,7 @@ typedef struct {
 } Cube;
 
 void draw_grid(int width, int height, int depth) {
+    double time = GetTime() * 2;
 
     for (size_t z = 0; z < depth + 1; z++) {
         for (size_t y = 0; y < height + 1; y++) {
@@ -36,7 +44,15 @@ void draw_grid(int width, int height, int depth) {
                 int offset_y = y - (height - 1) / 2.0;
                 int offset_x = x - (width - 1) / 2.0;
 
-                DrawSphere((Vector3){offset_x - .5, offset_y - 0.5, offset_z - 0.5}, .05, GRAY);
+                double noise_x = x / (double)width * size + time;
+                double noise_y = y / (double)height * size;
+                double noise_z = z / (double)depth * size;
+
+                double val = Noise3D(noise_x, noise_y, noise_z, permutation_table);
+                // int color = (int)floor(((val + 1) * 127.5));
+                int color = val > 0 ? 0 : 255;
+
+                DrawSphere((Vector3){offset_x - .5, offset_y - 0.5, offset_z - 0.5}, .03, (Color){color, color, color, 255});
             }
         }
     }
@@ -181,6 +197,10 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
     SetTargetFPS(120);
 
+    // srand(time(NULL));
+
+    permutation_table = make_permutation();
+
     int grid_width = 5;
     int grid_height = 5;
     int grid_depth = 5;
@@ -190,7 +210,7 @@ int main(void) {
     Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
     generate_cubes(cubes, grid_width, grid_height, grid_depth);
 
-    cubes[0].val[0] = 255; // test mesh
+    // cubes[0].val[0] = 255; // test mesh
 
     Mesh mesh = draw_mesh(cubes[0]);
     Model model = LoadModelFromMesh(mesh);
@@ -229,8 +249,8 @@ int main(void) {
             ClearBackground(GetColor(0x181818AA));
             BeginMode3D(camera);
     
-                draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
-                // draw_grid(grid_width, grid_height, grid_depth);
+                // draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
+                draw_grid(grid_width, grid_height, grid_depth);
                 
                 DrawMesh(mesh, matt, MatrixIdentity());
                 DrawModelWires(model, Vector3Zero(), 1, WHITE);
