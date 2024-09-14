@@ -30,7 +30,7 @@ Vector3 camera_start_up = {0, 1, 0};
 
 typedef struct {
     Vector3 p[8];
-    float val[8];
+    double val[8];
 } Cube;
 
 void draw_grid(int width, int height, int depth) {
@@ -44,7 +44,7 @@ void draw_grid(int width, int height, int depth) {
                 int offset_y = y - (height - 1) / 2.0;
                 int offset_x = x - (width - 1) / 2.0;
 
-                double noise_x = x / (double)width * size + time;
+                double noise_x = x / (double)width * size;
                 double noise_y = y / (double)height * size;
                 double noise_z = z / (double)depth * size;
 
@@ -80,22 +80,39 @@ void generate_cubes(Cube *cubes, int width, int height, int depth) {
     for (size_t z = 0; z < depth; z++) {
         for (size_t y = 0; y < height; y++) {
             for (size_t x = 0; x < width; x++) {
-                int offset_z = z - (depth - 1) / 2.0;
-                int offset_y = y - (height - 1) / 2.0;
-                int offset_x = x - (width - 1) / 2.0;
+
+                float offset_z = z - (depth - 1) / 2.0;
+                float offset_y = y - (height - 1) / 2.0;
+                float offset_x = x - (width - 1) / 2.0;
 
                 Cube *c = &cubes[index];
 
-                c->p[0] = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
-                c->p[1] = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
-                c->p[2] = (Vector3){offset_x + .5, offset_y + -.5, .5 + offset_z};
-                c->p[3] = (Vector3){offset_x + -.5, offset_y + -.5, .5 + offset_z};
-                c->p[4] = (Vector3){offset_x + -.5, offset_y + .5, -.5 + offset_z};
-                c->p[5] = (Vector3){offset_x + .5, offset_y + .5, -.5 + offset_z};
-                c->p[6] = (Vector3){offset_x + .5, offset_y + .5, .5 + offset_z};
-                c->p[7] = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
+                Vector3 pos0 = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
+                Vector3 pos1 = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
+                Vector3 pos2 = (Vector3){offset_x + .5, offset_y + -.5, .5 + offset_z};
+                Vector3 pos3 = (Vector3){offset_x + -.5, offset_y + -.5, .5 + offset_z};
+                Vector3 pos4 = (Vector3){offset_x + -.5, offset_y + .5, -.5 + offset_z};
+                Vector3 pos5 = (Vector3){offset_x + .5, offset_y + .5, -.5 + offset_z};
+                Vector3 pos6 = (Vector3){offset_x + .5, offset_y + .5, .5 + offset_z};
+                Vector3 pos7 = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
 
-                memset(c->val, 0, sizeof(c->val));
+                c->p[0] = pos0;
+                c->p[1] = pos1;
+                c->p[2] = pos2;
+                c->p[3] = pos3;
+                c->p[4] = pos4;
+                c->p[5] = pos5;
+                c->p[6] = pos6;
+                c->p[7] = pos7;
+
+                c->val[0] = Noise3D(pos0.x / (double)width * size, pos0.y / (double)height * size, pos0.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[1] = Noise3D(pos1.x / (double)width * size, pos1.y / (double)height * size, pos1.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[2] = Noise3D(pos2.x / (double)width * size, pos2.y / (double)height * size, pos2.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[3] = Noise3D(pos3.x / (double)width * size, pos3.y / (double)height * size, pos3.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[4] = Noise3D(pos4.x / (double)width * size, pos4.y / (double)height * size, pos4.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[5] = Noise3D(pos5.x / (double)width * size, pos5.y / (double)height * size, pos5.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[6] = Noise3D(pos6.x / (double)width * size, pos6.y / (double)height * size, pos6.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[7] = Noise3D(pos7.x / (double)width * size, pos7.y / (double)height * size, pos7.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
 
                 index++;
             }
@@ -115,76 +132,73 @@ Vector3 center_of_two_vec3(Vector3 point1, Vector3 point2) {
     return (Vector3){center_x, center_y, center_z};
 }
 
-Mesh draw_mesh(Cube cube) {
-    Vector3 vert_list[12];
+Mesh draw_mesh(Cube *cubes, int width, int height, int depth, Vector3 *triangles) {
+    int current_triangle = 0;
+    
+    for (size_t i = 0; i < width * height * depth; i++) {
+        Cube *c = &cubes[i];
 
-    int cube_index = 0;
-    if (cube.val[0] < 100) cube_index |= 1;
-    if (cube.val[1] < 100) cube_index |= 2;
-    if (cube.val[2] < 100) cube_index |= 4;
-    if (cube.val[3] < 100) cube_index |= 8;
-    if (cube.val[4] < 100) cube_index |= 16;
-    if (cube.val[5] < 100) cube_index |= 32;
-    if (cube.val[6] < 100) cube_index |= 64;
-    if (cube.val[7] < 100) cube_index |= 128;
+        Vector3 vert_list[12];
 
-    if (edgeTable[cube_index] & 1) vert_list[0] = center_of_two_vec3(cube.p[0], cube.p[1]);
-    if (edgeTable[cube_index] & 2) vert_list[1] = center_of_two_vec3(cube.p[1], cube.p[2]);
-    if (edgeTable[cube_index] & 4) vert_list[2] = center_of_two_vec3(cube.p[2], cube.p[3]);
-    if (edgeTable[cube_index] & 8) vert_list[3] = center_of_two_vec3(cube.p[3], cube.p[0]);
-    if (edgeTable[cube_index] & 16) vert_list[4] = center_of_two_vec3(cube.p[4], cube.p[5]);
-    if (edgeTable[cube_index] & 32) vert_list[5] = center_of_two_vec3(cube.p[5], cube.p[6]);
-    if (edgeTable[cube_index] & 64) vert_list[6] = center_of_two_vec3(cube.p[6], cube.p[7]);
-    if (edgeTable[cube_index] & 128) vert_list[7] = center_of_two_vec3(cube.p[7], cube.p[4]);
-    if (edgeTable[cube_index] & 256) vert_list[8] = center_of_two_vec3(cube.p[0], cube.p[4]);
-    if (edgeTable[cube_index] & 512) vert_list[9] = center_of_two_vec3(cube.p[1], cube.p[5]);
-    if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(cube.p[2], cube.p[6]);
-    if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(cube.p[3], cube.p[7]);
+        int cube_index = 0;
+        if (c->val[0] < 100) cube_index |= 1;
+        if (c->val[1] < 100) cube_index |= 2;
+        if (c->val[2] < 100) cube_index |= 4;
+        if (c->val[3] < 100) cube_index |= 8;
+        if (c->val[4] < 100) cube_index |= 16;
+        if (c->val[5] < 100) cube_index |= 32;
+        if (c->val[6] < 100) cube_index |= 64;
+        if (c->val[7] < 100) cube_index |= 128;
 
-    int vertex_count = 0;
-    printf("on: %d, on: %d\n", cube_index, vertex_count);
-    for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
+        if (edgeTable[cube_index] & 1) vert_list[0] = center_of_two_vec3(c->p[0], c->p[1]);
+        if (edgeTable[cube_index] & 2) vert_list[1] = center_of_two_vec3(c->p[1], c->p[2]);
+        if (edgeTable[cube_index] & 4) vert_list[2] = center_of_two_vec3(c->p[2], c->p[3]);
+        if (edgeTable[cube_index] & 8) vert_list[3] = center_of_two_vec3(c->p[3], c->p[0]);
+        if (edgeTable[cube_index] & 16) vert_list[4] = center_of_two_vec3(c->p[4], c->p[5]);
+        if (edgeTable[cube_index] & 32) vert_list[5] = center_of_two_vec3(c->p[5], c->p[6]);
+        if (edgeTable[cube_index] & 64) vert_list[6] = center_of_two_vec3(c->p[6], c->p[7]);
+        if (edgeTable[cube_index] & 128) vert_list[7] = center_of_two_vec3(c->p[7], c->p[4]);
+        if (edgeTable[cube_index] & 256) vert_list[8] = center_of_two_vec3(c->p[0], c->p[4]);
+        if (edgeTable[cube_index] & 512) vert_list[9] = center_of_two_vec3(c->p[1], c->p[5]);
+        if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(c->p[2], c->p[6]);
+        if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(c->p[3], c->p[7]);
 
+        int vertex_count = 0;
+        for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
+
+        for (int i = 0; i < vertex_count; i += 3) {
+            triangles[current_triangle + 0] = vert_list[triTable[cube_index][i + 2]];
+            triangles[current_triangle + 1] = vert_list[triTable[cube_index][i + 1]];
+            triangles[current_triangle + 2] = vert_list[triTable[cube_index][i + 0]];
+            current_triangle += 3;
+        }
+
+        for (int i = 0; i < vertex_count; i++) {
+            triangles[current_triangle] = vert_list[triTable[cube_index][i]];
+            current_triangle++;
+        }
+    }
+}
+
+Mesh build_mesh(Vector3 *triangles, int size) {
     Mesh mesh = {0};
-    mesh.vertexCount = vertex_count * 2;
+    mesh.vertexCount = size;
     mesh.triangleCount = mesh.vertexCount / 3.0;
     mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
 
-    printf("original triangles: %d\n", vertex_count);
-    printf("vertexCount: %d\n", mesh.vertexCount);
-    printf("triangleCount: %d\n", mesh.triangleCount);
-
-    int current_triangle = 0;
-    for (int i = 0; i < vertex_count; i += 3) {
-        // Print each vertex for debugging (optional)
-        print_vec(vert_list[triTable[cube_index][i]]);
-        print_vec(vert_list[triTable[cube_index][i + 1]]);
-        print_vec(vert_list[triTable[cube_index][i + 2]]);
-
-
-        // Reverse the vertex order by assigning in reverse
-        mesh.vertices[current_triangle] = vert_list[triTable[cube_index][i + 2]].x;
-        mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i + 2]].y;
-        mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i + 2]].z;
-
-        mesh.vertices[current_triangle + 3] = vert_list[triTable[cube_index][i + 1]].x;
-        mesh.vertices[current_triangle + 4] = vert_list[triTable[cube_index][i + 1]].y;
-        mesh.vertices[current_triangle + 5] = vert_list[triTable[cube_index][i + 1]].z;
-
-        mesh.vertices[current_triangle + 6] = vert_list[triTable[cube_index][i]].x;
-        mesh.vertices[current_triangle + 7] = vert_list[triTable[cube_index][i]].y;
-        mesh.vertices[current_triangle + 8] = vert_list[triTable[cube_index][i]].z;
-
-        // Move to the next triangle
-        current_triangle += 9; // 3 vertices * 3 coordinates (x, y, z)
+    for (size_t i = 0; i < size; i++)
+    {
+        print_vec(triangles[i]);
     }
+    
 
-    for (int i = 0; i < vertex_count; i++) {
-        print_vec(vert_list[triTable[cube_index][i]]);
-        mesh.vertices[current_triangle + 0] = vert_list[triTable[cube_index][i]].x;
-        mesh.vertices[current_triangle + 1] = vert_list[triTable[cube_index][i]].y;
-        mesh.vertices[current_triangle + 2] = vert_list[triTable[cube_index][i]].z;
-        current_triangle += 3;
+    int triangleCount = 0;
+    for (size_t i = 0; i < size; i++) {
+        mesh.vertices[triangleCount + 0] = triangles[i].x;
+        mesh.vertices[triangleCount + 1] = triangles[i].y;
+        mesh.vertices[triangleCount + 2] = triangles[i].z;
+
+        triangleCount+=3;
     }
 
     UploadMesh(&mesh, false);
@@ -197,23 +211,27 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
     SetTargetFPS(120);
 
-    // srand(time(NULL));
+    srand(2);
 
     permutation_table = make_permutation();
 
-    int grid_width = 5;
-    int grid_height = 5;
-    int grid_depth = 5;
+    int grid_width = 2;
+    int grid_height = 1;
+    int grid_depth = 1;
 
     int total_size = grid_width * grid_height * grid_depth;
 
     Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
     generate_cubes(cubes, grid_width, grid_height, grid_depth);
 
-    // cubes[0].val[0] = 255; // test mesh
+    int sizeE = 2 * 15;
 
-    Mesh mesh = draw_mesh(cubes[0]);
+    Vector3 *triangles = (Vector3 *)malloc(sizeE * sizeof(Vector3));
+    draw_mesh(cubes, grid_width, grid_height, grid_depth, triangles);
+
+    Mesh mesh = build_mesh(triangles, sizeE);
     Model model = LoadModelFromMesh(mesh);
+
 
     Material matt = LoadMaterialDefault();
     matt.maps[MATERIAL_MAP_DIFFUSE].color = RED;
@@ -249,12 +267,11 @@ int main(void) {
             ClearBackground(GetColor(0x181818AA));
             BeginMode3D(camera);
     
-                // draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
-                draw_grid(grid_width, grid_height, grid_depth);
+                draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
+                // draw_grid(grid_width, grid_height, grid_depth);
                 
                 DrawMesh(mesh, matt, MatrixIdentity());
                 DrawModelWires(model, Vector3Zero(), 1, WHITE);
-
                 EndMode3D();
             DrawFPS(10, 10);
 
