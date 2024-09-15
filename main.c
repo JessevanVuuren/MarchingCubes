@@ -19,13 +19,13 @@
 #define SCALE 1
 #define ORIGIN_OFFSET ((float)SCALE / 2)
 
-double size = 1.5;
+double size = 2;
 
 int *permutation_table;
 
 Vector3 target = {0};
 Vector3 origin = {-ORIGIN_OFFSET, -ORIGIN_OFFSET, -ORIGIN_OFFSET};
-Vector3 camera_start_pos = {40, 40, 40};
+Vector3 camera_start_pos = {10, 10, 10};
 Vector3 camera_start_up = {0, 1, 0};
 
 typedef struct {
@@ -34,10 +34,11 @@ typedef struct {
 } Cube;
 
 void draw_point(Cube cube, int index) {
+    float size = .05;
+
     Vector3 pos = (Vector3){cube.p[index].x, cube.p[index].y, cube.p[index].z};
     Color color = (Color){cube.val[index], cube.val[index], cube.val[index], 255};
 
-    float size = .05;
     DrawCube(pos, size, size, size, color);
 }
 
@@ -91,14 +92,14 @@ void generate_cubes(Cube *cubes, int width, int height, int depth) {
                 c->p[6] = pos6;
                 c->p[7] = pos7;
 
-                c->val[0] = Noise3D(pos0.x / (double)width * size, pos0.y / (double)height * size, pos0.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[1] = Noise3D(pos1.x / (double)width * size, pos1.y / (double)height * size, pos1.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[2] = Noise3D(pos2.x / (double)width * size, pos2.y / (double)height * size, pos2.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[3] = Noise3D(pos3.x / (double)width * size, pos3.y / (double)height * size, pos3.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[4] = Noise3D(pos4.x / (double)width * size, pos4.y / (double)height * size, pos4.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[5] = Noise3D(pos5.x / (double)width * size, pos5.y / (double)height * size, pos5.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[6] = Noise3D(pos6.x / (double)width * size, pos6.y / (double)height * size, pos6.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
-                c->val[7] = Noise3D(pos7.x / (double)width * size, pos7.y / (double)height * size, pos7.z / (double)depth * size, permutation_table) > 0 ? 0 : 255;
+                c->val[0] = (Noise3D(pos0.x / (double)width * size, pos0.y / (double)height * size, pos0.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[1] = (Noise3D(pos1.x / (double)width * size, pos1.y / (double)height * size, pos1.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[2] = (Noise3D(pos2.x / (double)width * size, pos2.y / (double)height * size, pos2.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[3] = (Noise3D(pos3.x / (double)width * size, pos3.y / (double)height * size, pos3.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[4] = (Noise3D(pos4.x / (double)width * size, pos4.y / (double)height * size, pos4.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[5] = (Noise3D(pos5.x / (double)width * size, pos5.y / (double)height * size, pos5.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[6] = (Noise3D(pos6.x / (double)width * size, pos6.y / (double)height * size, pos6.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                c->val[7] = (Noise3D(pos7.x / (double)width * size, pos7.y / (double)height * size, pos7.z / (double)depth * size, permutation_table) + 1) * 127.5;
 
                 index++;
             }
@@ -110,12 +111,22 @@ void print_vec(Vector3 vec) {
     printf("Cube 0, vertex 0: (%f, %f, %f)\n", vec.x, vec.y, vec.z);
 }
 
-Vector3 center_of_two_vec3(Vector3 point1, Vector3 point2) {
-    float center_x = (point1.x + point2.x) / 2;
-    float center_y = (point1.y + point2.y) / 2;
-    float center_z = (point1.z + point2.z) / 2;
+Vector3 vector_interpolate(double value, Vector3 p1, Vector3 p2, double val1, double val2) {
 
-    return (Vector3){center_x, center_y, center_z};
+    Vector3 p;
+    
+    if (fabs(val1 - val2) > 0.00001f) {
+        p.x = p1.x + (p2.x - p1.x) / (val2 - val1) * (value - val1);
+        p.y = p1.y + (p2.y - p1.y) / (val2 - val1) * (value - val1);
+        p.z = p1.z + (p2.z - p1.z) / (val2 - val1) * (value - val1);
+    } else {
+        p.x = p1.x;
+        p.y = p1.y;
+        p.z = p1.z;
+    }
+
+    return p;
+
 }
 
 Mesh draw_mesh(Cube *cubes, int width, int height, int depth, Vector3 *triangles) {
@@ -127,27 +138,28 @@ Mesh draw_mesh(Cube *cubes, int width, int height, int depth, Vector3 *triangles
         Vector3 vert_list[12];
 
         int cube_index = 0;
-        if (c->val[0] < 100) cube_index |= 1;
-        if (c->val[1] < 100) cube_index |= 2;
-        if (c->val[2] < 100) cube_index |= 4;
-        if (c->val[3] < 100) cube_index |= 8;
-        if (c->val[4] < 100) cube_index |= 16;
-        if (c->val[5] < 100) cube_index |= 32;
-        if (c->val[6] < 100) cube_index |= 64;
-        if (c->val[7] < 100) cube_index |= 128;
+        if (c->val[0] < 127.5) cube_index |= 1;
+        if (c->val[1] < 127.5) cube_index |= 2;
+        if (c->val[2] < 127.5) cube_index |= 4;
+        if (c->val[3] < 127.5) cube_index |= 8;
+        if (c->val[4] < 127.5) cube_index |= 16;
+        if (c->val[5] < 127.5) cube_index |= 32;
+        if (c->val[6] < 127.5) cube_index |= 64;
+        if (c->val[7] < 127.5) cube_index |= 128;
 
-        if (edgeTable[cube_index] & 1) vert_list[0] = center_of_two_vec3(c->p[0], c->p[1]);
-        if (edgeTable[cube_index] & 2) vert_list[1] = center_of_two_vec3(c->p[1], c->p[2]);
-        if (edgeTable[cube_index] & 4) vert_list[2] = center_of_two_vec3(c->p[2], c->p[3]);
-        if (edgeTable[cube_index] & 8) vert_list[3] = center_of_two_vec3(c->p[3], c->p[0]);
-        if (edgeTable[cube_index] & 16) vert_list[4] = center_of_two_vec3(c->p[4], c->p[5]);
-        if (edgeTable[cube_index] & 32) vert_list[5] = center_of_two_vec3(c->p[5], c->p[6]);
-        if (edgeTable[cube_index] & 64) vert_list[6] = center_of_two_vec3(c->p[6], c->p[7]);
-        if (edgeTable[cube_index] & 128) vert_list[7] = center_of_two_vec3(c->p[7], c->p[4]);
-        if (edgeTable[cube_index] & 256) vert_list[8] = center_of_two_vec3(c->p[0], c->p[4]);
-        if (edgeTable[cube_index] & 512) vert_list[9] = center_of_two_vec3(c->p[1], c->p[5]);
-        if (edgeTable[cube_index] & 1024) vert_list[10] = center_of_two_vec3(c->p[2], c->p[6]);
-        if (edgeTable[cube_index] & 2048) vert_list[11] = center_of_two_vec3(c->p[3], c->p[7]);
+        if (edgeTable[cube_index] & 1) vert_list[0] = vector_interpolate(127.5, c->p[0], c->p[1], c->val[0], c->val[1]);
+        if (edgeTable[cube_index] & 2) vert_list[1] = vector_interpolate(127.5, c->p[1], c->p[2], c->val[1], c->val[2]);
+        if (edgeTable[cube_index] & 4) vert_list[2] = vector_interpolate(127.5, c->p[2], c->p[3], c->val[2], c->val[3]);
+        if (edgeTable[cube_index] & 8) vert_list[3] = vector_interpolate(127.5, c->p[3], c->p[0], c->val[3], c->val[0]);
+        if (edgeTable[cube_index] & 16) vert_list[4] = vector_interpolate(127.5, c->p[4], c->p[5], c->val[4], c->val[5]);
+        if (edgeTable[cube_index] & 32) vert_list[5] = vector_interpolate(127.5, c->p[5], c->p[6], c->val[5], c->val[6]);
+        if (edgeTable[cube_index] & 64) vert_list[6] = vector_interpolate(127.5, c->p[6], c->p[7], c->val[6], c->val[7]);
+        if (edgeTable[cube_index] & 128) vert_list[7] = vector_interpolate(127.5, c->p[7], c->p[4], c->val[7], c->val[4]);
+        if (edgeTable[cube_index] & 256) vert_list[8] = vector_interpolate(127.5, c->p[0], c->p[4], c->val[0], c->val[4]);
+        if (edgeTable[cube_index] & 512) vert_list[9] = vector_interpolate(127.5, c->p[1], c->p[5], c->val[1], c->val[5]);
+        if (edgeTable[cube_index] & 1024) vert_list[10] = vector_interpolate(127.5, c->p[2], c->p[6], c->val[2], c->val[6]);
+        if (edgeTable[cube_index] & 2048) vert_list[11] = vector_interpolate(127.5, c->p[3], c->p[7], c->val[3], c->val[7]);
+
 
         int vertex_count = 0;
         for (; triTable[cube_index][vertex_count] != -1; vertex_count++);
@@ -191,6 +203,7 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
     SetTargetFPS(120);
 
+    // srand(2);
     srand(time(NULL));
 
     permutation_table = make_permutation();
@@ -204,9 +217,11 @@ int main(void) {
     Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
     generate_cubes(cubes, grid_width, grid_height, grid_depth);
 
-    int amount_triangles = 1000000;
+    int amount_triangles = 500000;
 
     Vector3 *triangles = (Vector3 *)malloc(amount_triangles * sizeof(Vector3));
+    memset(triangles, 0, amount_triangles * sizeof(Vector3));
+
     draw_mesh(cubes, grid_width, grid_height, grid_depth, triangles);
 
     Mesh mesh = build_mesh(triangles, amount_triangles);
@@ -247,7 +262,7 @@ int main(void) {
             ClearBackground(GetColor(0x181818AA));
             BeginMode3D(camera);
     
-                // draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
+                draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
                 
                 DrawMesh(mesh, matt, MatrixIdentity());
                 DrawModelWires(model, Vector3Zero(), 1, BLACK);
