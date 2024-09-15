@@ -19,13 +19,13 @@
 #define SCALE 1
 #define ORIGIN_OFFSET ((float)SCALE / 2)
 
-double size = 1;
+double size = 1.5;
 
 int *permutation_table;
 
 Vector3 target = {0};
 Vector3 origin = {-ORIGIN_OFFSET, -ORIGIN_OFFSET, -ORIGIN_OFFSET};
-Vector3 camera_start_pos = {10, 10, 10};
+Vector3 camera_start_pos = {40, 40, 40};
 Vector3 camera_start_up = {0, 1, 0};
 
 typedef struct {
@@ -33,45 +33,31 @@ typedef struct {
     double val[8];
 } Cube;
 
-void draw_grid(int width, int height, int depth) {
-    double time = GetTime() * 2;
+void draw_point(Cube cube, int index) {
+    Vector3 pos = (Vector3){cube.p[index].x, cube.p[index].y, cube.p[index].z};
+    Color color = (Color){cube.val[index], cube.val[index], cube.val[index], 255};
 
-    for (size_t z = 0; z < depth + 1; z++) {
-        for (size_t y = 0; y < height + 1; y++) {
-            for (size_t x = 0; x < width + 1; x++) {
-
-                int offset_z = z - (depth - 1) / 2.0;
-                int offset_y = y - (height - 1) / 2.0;
-                int offset_x = x - (width - 1) / 2.0;
-
-                double noise_x = x / (double)width * size;
-                double noise_y = y / (double)height * size;
-                double noise_z = z / (double)depth * size;
-
-                double val = Noise3D(noise_x, noise_y, noise_z, permutation_table);
-                // int color = (int)floor(((val + 1) * 127.5));
-                int color = val > 0 ? 0 : 255;
-
-                DrawSphere((Vector3){offset_x - .5, offset_y - 0.5, offset_z - 0.5}, .03, (Color){color, color, color, 255});
-            }
-        }
-    }
-}
-
-void draw_cube_vertex(Cube cube) {
-    DrawSphere((Vector3){cube.p[0].x, cube.p[0].y, cube.p[0].z}, .05, (Color){cube.val[0], cube.val[0], cube.val[0], 255});
-    DrawSphere((Vector3){cube.p[1].x, cube.p[1].y, cube.p[1].z}, .05, (Color){cube.val[1], cube.val[1], cube.val[1], 255});
-    DrawSphere((Vector3){cube.p[2].x, cube.p[2].y, cube.p[2].z}, .05, (Color){cube.val[2], cube.val[2], cube.val[2], 255});
-    DrawSphere((Vector3){cube.p[3].x, cube.p[3].y, cube.p[3].z}, .05, (Color){cube.val[3], cube.val[3], cube.val[3], 255});
-    DrawSphere((Vector3){cube.p[4].x, cube.p[4].y, cube.p[4].z}, .05, (Color){cube.val[4], cube.val[4], cube.val[4], 255});
-    DrawSphere((Vector3){cube.p[5].x, cube.p[5].y, cube.p[5].z}, .05, (Color){cube.val[5], cube.val[5], cube.val[5], 255});
-    DrawSphere((Vector3){cube.p[6].x, cube.p[6].y, cube.p[6].z}, .05, (Color){cube.val[6], cube.val[6], cube.val[6], 255});
-    DrawSphere((Vector3){cube.p[7].x, cube.p[7].y, cube.p[7].z}, .05, (Color){cube.val[7], cube.val[7], cube.val[7], 255});
+    float size = .05;
+    DrawCube(pos, size, size, size, color);
 }
 
 void draw_cubes_vertex(Cube *cubes, int width, int height, int depth) {
-    for (size_t i = 0; i < width * height * depth; i++) {
-        draw_cube_vertex(cubes[i]);
+    int i = 0;
+    for (size_t z = 0; z < depth; z++) {
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
+
+                draw_point(cubes[i], 0);
+                if (z == depth - 1) draw_point(cubes[i], 3);
+                if (x == width - 1) draw_point(cubes[i], 1);
+                if (y == height - 1) draw_point(cubes[i], 4);
+                if (x == width - 1 && z == depth - 1) draw_point(cubes[i], 2);
+                if (x == width - 1 && y == height - 1) draw_point(cubes[i], 5);
+                if (z - depth - 1 && y == height - 1) draw_point(cubes[i], 7);
+                if (z - depth - 1 && y == height - 1 && x == width - 1) draw_point(cubes[i], 6);
+                i++;
+            }
+        }
     }
 }
 
@@ -134,7 +120,7 @@ Vector3 center_of_two_vec3(Vector3 point1, Vector3 point2) {
 
 Mesh draw_mesh(Cube *cubes, int width, int height, int depth, Vector3 *triangles) {
     int current_triangle = 0;
-    
+
     for (size_t i = 0; i < width * height * depth; i++) {
         Cube *c = &cubes[i];
 
@@ -186,19 +172,13 @@ Mesh build_mesh(Vector3 *triangles, int size) {
     mesh.triangleCount = mesh.vertexCount / 3.0;
     mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
 
-    for (size_t i = 0; i < size; i++)
-    {
-        print_vec(triangles[i]);
-    }
-    
-
     int triangleCount = 0;
     for (size_t i = 0; i < size; i++) {
         mesh.vertices[triangleCount + 0] = triangles[i].x;
         mesh.vertices[triangleCount + 1] = triangles[i].y;
         mesh.vertices[triangleCount + 2] = triangles[i].z;
 
-        triangleCount+=3;
+        triangleCount += 3;
     }
 
     UploadMesh(&mesh, false);
@@ -211,25 +191,25 @@ int main(void) {
     InitWindow(WIDTH, HEIGHT, "MarchingCubes");
     SetTargetFPS(120);
 
-    srand(2);
+    srand(time(NULL));
 
     permutation_table = make_permutation();
 
-    int grid_width = 2;
-    int grid_height = 1;
-    int grid_depth = 1;
+    int grid_width = 30;
+    int grid_height = 30;
+    int grid_depth = 30;
 
     int total_size = grid_width * grid_height * grid_depth;
 
     Cube *cubes = (Cube *)malloc(total_size * sizeof(Cube));
     generate_cubes(cubes, grid_width, grid_height, grid_depth);
 
-    int sizeE = 2 * 15;
+    int amount_triangles = 1000000;
 
-    Vector3 *triangles = (Vector3 *)malloc(sizeE * sizeof(Vector3));
+    Vector3 *triangles = (Vector3 *)malloc(amount_triangles * sizeof(Vector3));
     draw_mesh(cubes, grid_width, grid_height, grid_depth, triangles);
 
-    Mesh mesh = build_mesh(triangles, sizeE);
+    Mesh mesh = build_mesh(triangles, amount_triangles);
     Model model = LoadModelFromMesh(mesh);
 
 
@@ -267,11 +247,10 @@ int main(void) {
             ClearBackground(GetColor(0x181818AA));
             BeginMode3D(camera);
     
-                draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
-                // draw_grid(grid_width, grid_height, grid_depth);
+                // draw_cubes_vertex(cubes, grid_width, grid_height, grid_depth);
                 
                 DrawMesh(mesh, matt, MatrixIdentity());
-                DrawModelWires(model, Vector3Zero(), 1, WHITE);
+                DrawModelWires(model, Vector3Zero(), 1, BLACK);
                 EndMode3D();
             DrawFPS(10, 10);
 
@@ -279,6 +258,9 @@ int main(void) {
         // clang-format on
     }
 
+    free(triangles);
+    UnloadMaterial(matt);
+    UnloadMesh(mesh);
     CloseWindow();
 
     return 0;
