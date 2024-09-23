@@ -19,13 +19,13 @@
 #define SCALE 1
 #define ORIGIN_OFFSET ((float)SCALE / 2)
 
-double size = 2;
+double size = 1;
 
 int *permutation_table;
 
 Vector3 target = {0};
 Vector3 origin = {-ORIGIN_OFFSET, -ORIGIN_OFFSET, -ORIGIN_OFFSET};
-Vector3 camera_start_pos = {10, 10, 10};
+Vector3 camera_start_pos = {40, 40, 40};
 Vector3 camera_start_up = {0, 1, 0};
 
 typedef struct {
@@ -74,32 +74,22 @@ void generate_cubes(Cube *cubes, int width, int height, int depth) {
 
                 Cube *c = &cubes[index];
 
-                Vector3 pos0 = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
-                Vector3 pos1 = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
-                Vector3 pos2 = (Vector3){offset_x + .5, offset_y + -.5, .5 + offset_z};
-                Vector3 pos3 = (Vector3){offset_x + -.5, offset_y + -.5, .5 + offset_z};
-                Vector3 pos4 = (Vector3){offset_x + -.5, offset_y + .5, -.5 + offset_z};
-                Vector3 pos5 = (Vector3){offset_x + .5, offset_y + .5, -.5 + offset_z};
-                Vector3 pos6 = (Vector3){offset_x + .5, offset_y + .5, .5 + offset_z};
-                Vector3 pos7 = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
+                c->p[0] = (Vector3){offset_x + -.5, offset_y + -.5, -.5 + offset_z};
+                c->p[1] = (Vector3){offset_x + .5, offset_y + -.5, -.5 + offset_z};
+                c->p[2] = (Vector3){offset_x + .5, offset_y + -.5, .5 + offset_z};
+                c->p[3] = (Vector3){offset_x + -.5, offset_y + -.5, .5 + offset_z};
+                c->p[4] = (Vector3){offset_x + -.5, offset_y + .5, -.5 + offset_z};
+                c->p[5] = (Vector3){offset_x + .5, offset_y + .5, -.5 + offset_z};
+                c->p[6] = (Vector3){offset_x + .5, offset_y + .5, .5 + offset_z};
+                c->p[7] = (Vector3){offset_x + -.5, offset_y + .5, .5 + offset_z};
 
-                c->p[0] = pos0;
-                c->p[1] = pos1;
-                c->p[2] = pos2;
-                c->p[3] = pos3;
-                c->p[4] = pos4;
-                c->p[5] = pos5;
-                c->p[6] = pos6;
-                c->p[7] = pos7;
+                for (size_t i = 0; i < 8; i++) {
+                    double noise_val = Noise3D(c->p[i].x / (double)width * size,
+                                               c->p[i].y / (double)height * size,
+                                               c->p[i].z / (double)depth * size, permutation_table);
 
-                c->val[0] = (Noise3D(pos0.x / (double)width * size, pos0.y / (double)height * size, pos0.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[1] = (Noise3D(pos1.x / (double)width * size, pos1.y / (double)height * size, pos1.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[2] = (Noise3D(pos2.x / (double)width * size, pos2.y / (double)height * size, pos2.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[3] = (Noise3D(pos3.x / (double)width * size, pos3.y / (double)height * size, pos3.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[4] = (Noise3D(pos4.x / (double)width * size, pos4.y / (double)height * size, pos4.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[5] = (Noise3D(pos5.x / (double)width * size, pos5.y / (double)height * size, pos5.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[6] = (Noise3D(pos6.x / (double)width * size, pos6.y / (double)height * size, pos6.z / (double)depth * size, permutation_table) + 1) * 127.5;
-                c->val[7] = (Noise3D(pos7.x / (double)width * size, pos7.y / (double)height * size, pos7.z / (double)depth * size, permutation_table) + 1) * 127.5;
+                    c->val[i] = (noise_val + 1) * 127.5;
+                }
 
                 index++;
             }
@@ -114,7 +104,7 @@ void print_vec(Vector3 vec) {
 Vector3 vector_interpolate(double value, Vector3 p1, Vector3 p2, double val1, double val2) {
 
     Vector3 p;
-    
+
     if (fabs(val1 - val2) > 0.00001f) {
         p.x = p1.x + (p2.x - p1.x) / (val2 - val1) * (value - val1);
         p.y = p1.y + (p2.y - p1.y) / (val2 - val1) * (value - val1);
@@ -126,7 +116,6 @@ Vector3 vector_interpolate(double value, Vector3 p1, Vector3 p2, double val1, do
     }
 
     return p;
-
 }
 
 Mesh draw_mesh(Cube *cubes, int width, int height, int depth, Vector3 *triangles) {
